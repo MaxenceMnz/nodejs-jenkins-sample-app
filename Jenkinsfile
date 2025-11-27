@@ -1,36 +1,56 @@
 pipeline {
     agent any
-    
+
     environment {
-        DOCKER_IMAGE = "jenkins-demo-app"
-        DOCKER_TAG = "${BUILD_NUMBER}"
+        IMAGE_NAME = "nodejs-jenkins-sample-app"
+        IMAGE_TAG  = "${env.BUILD_NUMBER}"
+        FULL_IMAGE = "${IMAGE_NAME}:${IMAGE_TAG}"
+        CONTAINER_NAME = "nodejs-jenkins-sample-app-container"
     }
-    
+
     stages {
         stage('Checkout') {
-            // TODO: Récupérer le code source
+            steps {
+                // Récupère le code du repo configuré dans le job Jenkins
+                checkout scm
+            }
         }
-        
-        stage('Install Dependencies') {
-            // TODO: Installer les dépendances
+
+        stage('Install dependencies') {
+            steps {
+                sh 'npm install'
+            }
         }
-        
-        stage('Run Tests') {
-            // TODO: Lancer les tests
+
+        stage('Test') {
+            steps {
+                // Adapte si ton projet a une autre commande, par ex. "npm run test"
+                sh 'npm test'
+            }
         }
-        
-        stage('Build Docker Image') {
-            // TODO: Construire l'image Docker
+
+        stage('Build Docker image') {
+            steps {
+                sh "docker build -t ${FULL_IMAGE} ."
+            }
         }
-        
-        stage('Deploy') {
-            // TODO: Déployer le conteneur
-            // Arrêter l'ancien conteneur s'il existe 
-            // Démarrer le nouveau conteneur avec la nouvelle version
+
+        stage('Deploy container') {
+            steps {
+                // Stop & remove l’ancien conteneur si présent
+                sh "docker stop ${CONTAINER_NAME} || true"
+                sh "docker rm ${CONTAINER_NAME} || true"
+
+                // Lancer le conteneur sur localhost:3000
+                sh "docker run -d --name ${CONTAINER_NAME} -p 3000:3000 ${FULL_IMAGE}"
+            }
         }
     }
-    
+
     post {
-        // TODO: Partie bonus
+        always {
+            echo "Build number: ${env.BUILD_NUMBER}"
+            echo "Docker image: ${FULL_IMAGE}"
+        }
     }
 }

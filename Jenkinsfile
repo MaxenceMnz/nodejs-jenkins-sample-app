@@ -7,6 +7,7 @@ pipeline {
         DOCKER_IMAGE_TAG = "${DOCKER_IMAGE_NAME}:${env.BUILD_NUMBER}"
         DOCKER_IMAGE_LATEST = "${DOCKER_IMAGE_NAME}:latest"
         APP_PORT = "3000"
+        SONAR_PROJECT_KEY = "nodejs-app-jenkins"  // Clé unique de votre projet SonarQube
     }
     
     stages {
@@ -23,6 +24,29 @@ pipeline {
                 sh '''
                     npm install
                 '''
+            }
+        }
+        
+        stage('SonarQube Analysis') {
+            steps {
+                echo "🔍 Analyse SonarQube..."
+                withSonarQubeEnv('SonarIUT') {  // Nom exact de votre serveur SonarQube dans Jenkins
+                    sh '''
+                        sonar-scanner \
+                            -Dsonar.projectKey=${SONAR_PROJECT_KEY} \
+                            -Dsonar.sources=. \
+                            -Dsonar.host.url=http://votre-sonarqube:9000 \
+                            -Dsonar.javascript.lcov.reportPaths=coverage/lcov.info || true
+                    '''
+                }
+            }
+        }
+        
+        stage('Quality Gate') {
+            steps {
+                timeout(time: 5, unit: 'MINUTES') {
+                    waitForQualityGate abortPipeline: true
+                }
             }
         }
         
@@ -76,8 +100,16 @@ pipeline {
     
     post {
         always {
-            echo "🧹 Nettoyage..."
-            sh 'docker images | grep nodejs-app-jenkins || true'
+            echo "🧹 Nettoyage des anciennes images Docker..."
+            sh '''
+                # Supprime les images nodejs-app-jenkins plus anciennes que la actuelle
+                docker images --filter "reference=nodejs-app-jenkins" --format "{{.Repository}}:{{.Tag}} {{.ID}}" | \
+                grep -v ":${BUILD_NUMBER}" | grep -v ":latest" | \
+                awk '{print $2}' | xargs -r docker rmi -f || true
+                
+                # Nettoie les images dangling
+                docker image prune -f
+            '''
         }
         success {
             echo "🎉 Pipeline terminé avec succès ! App sur http://localhost:3000"

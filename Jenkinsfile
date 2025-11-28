@@ -30,13 +30,13 @@ pipeline {
         stage('SonarQube Analysis') {
             steps {
                 echo "🔍 Analyse SonarQube..."
-                withSonarQubeEnv('SonarIUT') {  // Nom exact de votre serveur SonarQube dans Jenkins
+                withSonarQubeEnv('sonarqube') {  // Nom exact du serveur SonarQube dans Jenkins
                     sh '''
                         sonar-scanner \
-                            -Dsonar.projectKey=${SONAR_PROJECT_KEY} \
-                            -Dsonar.sources=. \
-                            -Dsonar.host.url=http://votre-sonarqube:9000 \
-                            -Dsonar.javascript.lcov.reportPaths=coverage/lcov.info || true
+                        -Dsonar.projectKey=${SONAR_PROJECT_KEY} \
+                        -Dsonar.sources=. \
+                        -Dsonar.tests=tests \
+                        -Dsonar.test.inclusions=**/*.test.js,**/*.spec.js || true
                     '''
                 }
             }

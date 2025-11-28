@@ -15,21 +15,21 @@ pipeline {
     stages {
         stage('Checkout') {
             steps {
-                echo "📥 Récupération du code source..."
+                echo "Récupération du code source..."
                 checkout scm
             }
         }
 
         stage('Install Dependencies') {
             steps {
-                echo "📦 Installation des dépendances NodeJS..."
+                echo "Installation des dépendances NodeJS..."
                 sh 'npm install'
             }
         }
 
         stage('SonarQube Analysis') {
             steps {
-                echo "🔍 Analyse SonarQube..."
+                echo "Analyse SonarQube..."
                 script {
                     // Nom EXACT configuré dans Manage Jenkins > Global Tool Configuration
                     def scannerHome = tool 'installSonar'
@@ -58,14 +58,14 @@ pipeline {
 
         stage('Tests') {
             steps {
-                echo "🧪 Lancement des tests..."
+                echo "Lancement des tests..."
                 sh 'npm test || true'
             }
         }
 
         stage('Build Docker Image') {
             steps {
-                echo "🐳 Construction de l'image Docker ${DOCKER_IMAGE_TAG}..."
+                echo "Construction de l'image Docker ${DOCKER_IMAGE_TAG}..."
                 sh """
                     docker build -t ${DOCKER_IMAGE_TAG} .
                     docker tag ${DOCKER_IMAGE_TAG} ${DOCKER_IMAGE_LATEST}
@@ -75,7 +75,7 @@ pipeline {
 
         stage('Deploy Container') {
             steps {
-                echo "🚀 Déploiement du conteneur sur port ${APP_PORT}..."
+                echo "Déploiement du conteneur sur port ${APP_PORT}..."
                 sh """
                     docker stop ${DOCKER_IMAGE_NAME} || true
                     docker rm ${DOCKER_IMAGE_NAME} || true
@@ -90,7 +90,7 @@ pipeline {
 
         stage('Verification') {
             steps {
-                echo "✅ Vérification du déploiement..."
+                echo "Vérification du déploiement..."
                 sh """
                     sleep 5
                     curl -f http://localhost:${APP_PORT} || echo "App accessible sur http://localhost:${APP_PORT}"
@@ -102,7 +102,7 @@ pipeline {
 
     post {
         always {
-            echo "🧹 Nettoyage des anciennes images Docker..."
+            echo "Nettoyage des anciennes images Docker..."
             sh """
                 docker images --filter "reference=nodejs-app-jenkins" --format "{{.Repository}}:{{.Tag}} {{.ID}}" | \
                 grep -v ":${BUILD_NUMBER}" | grep -v ":latest" | \
@@ -112,10 +112,10 @@ pipeline {
             """
         }
         success {
-            echo "🎉 Pipeline terminé avec succès ! App sur http://localhost:3000"
+            echo "Pipeline terminé avec succès ! App sur http://localhost:3000"
         }
         failure {
-            echo "❌ Pipeline échoué"
+            echo "Pipeline échoué"
             sh 'docker stop nodejs-app-jenkins || true'
             sh 'docker rm nodejs-app-jenkins || true'
         }
